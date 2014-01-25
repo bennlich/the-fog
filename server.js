@@ -1,0 +1,132 @@
+/*
+
+	a node server that proxies HTTP requests to Firebase
+
+*/
+
+var app = require('http').createServer(handleRequest),
+	BinaryServer = require('binaryjs').BinaryServer,
+	firebase = require('firebase'),
+	url = require('url');
+
+var baseURL = 'https://acequia.firebaseio.com/fog/',
+	rootRef = new firebase(baseURL),
+	pendingRequests = [];
+
+binaryServer = BinaryServer({ server: app });
+app.listen(8080);
+
+binaryServer.on('connection', function(client) {
+	client.on('stream', function(stream, meta) {
+		console.log('incoming stream');
+		var request = pendingRequests[meta.id], httpRes;
+		if (request && (httpRes = request.httpRes)) {
+			httpRes.writeHead(200, meta.headers);
+			stream.on('end', function() {
+				console.log('replied to request');
+			});
+			stream.pipe(httpRes);
+			destroyPendingRequest(meta.id);
+		}
+		else {
+			console.log('failed to find request for incoming stream');
+		}
+	});
+});
+
+function destroyPendingRequest(id) {
+	var pendingRequest = pendingRequests[id];
+	pendingRequest.resRef && pendingRequest.resRef.off();
+	pendingRequest.reqRef && pendingRequest.reqRef.remove();
+	delete pendingRequests[id];
+}
+
+function handleRequest(httpReq, httpRes) {
+	if (httpReq.url === '/favicon.ico') {
+		httpRes.writeHead(200, {
+			'Content-Type': 'image/x-icon'
+		});
+		httpRes.end();
+		return;
+	}
+
+	var urlParts = url.parse(httpReq.url, true),
+		splitPath = urlParts.pathname.split("/");
+
+	if (splitPath.length < 3) {
+		console.log('bad request');
+		httpRes.writeHead(404);
+		httpRes.end();
+		return;
+	}
+
+	var reqId = Math.floor(Math.random()*10000000),
+		storageName = splitPath[1],
+		pathname = "/" + splitPath.slice(2).join("/"),
+		requestFields = {
+			'id': reqId,
+			'url': httpReq.url,
+			'pathname': pathname,
+			'query': urlParts.query,
+			'headers': httpReq.headers,
+			'method': httpReq.method,
+			'timestamp': new Date()
+		};
+
+	console.log(new Date() + ': ----------------------------------------');
+	console.log(urlParts, storageName, pathname);
+	console.log(requestFields.headers);
+
+	var reqRef = rootRef.child(storageName).push({
+		'request': requestFields
+	}, function(error) {
+		if (error) {
+			console.log('firebase request push failed.');
+			response.write('failed');
+		}
+	});
+
+	resRef = new firebase(baseURL + reqRef.name() + '/response');
+
+	pendingRequests[reqId] = {
+		httpRes: httpRes,
+		resRef: resRef,
+		reqRef: reqRef
+	};
+
+	resRef.on('value', function(snap) {
+		var status = snap.child('status').val(),
+			res = snap.child('body').val();
+		
+		if (snap.val()) {
+			switch(status) {
+				case 200:
+					httpRes.writeHead(status);
+					if (res['itemsArray']) {
+						res.items = {};
+						res.itemsArray.forEach(function(item) {
+							res.items[item.key] = item.value;
+						});
+						delete res.itemsArray;
+						httpRes.write(JSON.stringify(res));
+					}
+					else if (res['Content-Type']) {
+						// it's a file
+						// webrtc the file over
+					}
+					else {
+						// httpRes.write(res.toString());
+					}
+					break;
+				default:
+					status = status || 500;
+					httpRes.writeHead(status);
+					httpRes.write(JSON.stringify(res));
+			}
+			httpRes.end();
+
+			destroyPendingRequest(reqId);
+		}
+	});
+
+}
