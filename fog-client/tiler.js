@@ -1,64 +1,9 @@
-// mostly translated from GDAL:
-// https://github.com/OSGeo/gdal/blob/trunk/gdal/swig/python/scripts/gdal2tiles.py
-
 function Tiler(tileSize) {
-	// "Initialize the TMS Global Mercator pyramid"
-	// radius of the earth = 6378137 meters
 	this.tileSize = tileSize || 256;
-	this.initialResolution = 2 * Math.PI * 6378137 / this.tileSize;
-    // 156543.03392804062 meters/pixel for tileSize 256 pixels
-    this.originShift = 2 * Math.PI * 6378137 / 2.0;
-    // 20037508.342789244 meters
-    
-    // EPSG:900913 coordinate extent is
-    // [-20037508.342789244, -20037508.342789244, 20037508.342789244, 20037508.342789244]
-
-    // image coordinate extent is
-    // [0, 0, image.width, image.height]
-}
-
-Tiler.prototype.Resolution = function(zoom) {
-    // "Resolution (meters/pixel) for given zoom level (measured at Equator)"
-
-    // return (2 * math.pi * 6378137) / (self.tileSize * 2**zoom)
-    return this.initialResolution / (Math.pow(2, zoom));
-}
-
-Tiler.prototype.MetersToTile = function(mx, my, zoom) {
-    // "Returns tile for given mercator coordinates"
-
-    var p = this.MetersToPixels(mx, my, zoom);
-    return this.PixelsToTile(p[0], p[1]);
-}
-
-Tiler.prototype.MetersToPixels = function(mx, my, zoom) {
-    // "Converts EPSG:900913 to pyramid pixel coordinates in given zoom level"
-
-    var res = this.Resolution( zoom ),
-    	px = (mx + this.originShift) / res
-    	py = (my + this.originShift) / res;
-    return [px, py];
-}
-
-Tiler.prototype.PixelsToTile = function(px, py) {
-    // "Returns a tile covering region in given pixel coordinates"
-
-    var tx = Math.round( Math.ceil( px / this.tileSize ) - 1 ),
-    	ty = Math.round( Math.ceil( py / this.tileSize ) - 1 );
-    return [tx, ty];
-}
-
-Tiler.prototype.PixelsToMeters = function(px, py, zoom) {
-    // "Converts pixel coordinates in given zoom level of pyramid to EPSG:900913"
-
-    var res = this.Resolution( zoom ),
-    	mx = px * res - this.originShift
-    	my = py * res - this.originShift;
-    return [mx, my];
 }
 
 Tiler.prototype.TileRect = function(tx, ty, zoom, imageWidth, imageHeight) {
-    // "Returns bounds of the given tile in EPSG:900913 coordinates"
+    // returns the rect for the image tile (tx, ty) at the specified zoom
 
     var tileCoordExtent = this.tileSize * Math.pow(2, zoom),
     	imageCoordExtent = this.SmallestPowerOf2GreaterThan(Math.max(imageWidth, imageHeight)),
