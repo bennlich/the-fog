@@ -6,6 +6,7 @@
 
 var app = require('http').createServer(handleRequest),
 	BinaryServer = require('binaryjs').BinaryServer,
+	base64 = require('base64-stream'),
 	firebase = require('firebase'),
 	url = require('url');
 
@@ -21,11 +22,27 @@ binaryServer.on('connection', function(client) {
 		console.log('incoming stream');
 		var request = pendingRequests[meta.id], httpRes;
 		if (request && (httpRes = request.httpRes)) {
-			httpRes.writeHead(200, meta.headers);
-			stream.on('end', function() {
-				console.log('replied to request');
+
+			stream.on('data', function(chunk) {
+				console.log('received chunk');
 			});
-			stream.pipe(httpRes);
+			
+			stream.on('end', function() {
+				console.log('finished receiving stream');
+			});
+
+			if (meta.headers['Content-Transfer-Encoding'] &&
+				meta.headers['Content-Transfer-Encoding'] == 'base64') {
+				delete meta.headers['Content-Transfer-Encoding'];
+				console.log('piping encoded response');
+				httpRes.writeHead(200, meta.headers);
+				stream.pipe(base64.decode()).pipe(httpRes);
+			}
+			else {
+				httpRes.writeHead(200, meta.headers);
+				stream.pipe(httpRes);
+			}
+
 			destroyPendingRequest(meta.id);
 		}
 		else {
@@ -86,7 +103,7 @@ function handleRequest(httpReq, httpRes) {
 		}
 	});
 
-	resRef = new firebase(baseURL + reqRef.name() + '/response');
+	resRef = rootRef.child(storageName).child(reqRef.name() + '/response');
 
 	pendingRequests[reqId] = {
 		httpRes: httpRes,
@@ -99,6 +116,7 @@ function handleRequest(httpReq, httpRes) {
 			res = snap.child('body').val();
 		
 		if (snap.val()) {
+			console.log('received firebase response', status);
 			switch(status) {
 				case 200:
 					httpRes.writeHead(status);
