@@ -4,7 +4,10 @@
 	<script src="http://d3js.org/queue.v1.js"></script>
 	<script src="http://cdn.binaryjs.com/0/binary.js"></script>
 
+	<script src="canvas-to-blob.js"></script>
 	<script src='filer.js'></script>
+	<script src='import.js'></script>
+	<script src='tiler.js'></script>
 	<script src='main.js'></script>
 </head>
 <body onload="init();" style="">
@@ -13,5 +16,6 @@
 	<br>
 	<label>Upload a directory</label><br>
 	<input type="file" onchange="onImportDirectory(event)" webkitdirectory><br>
+	<canvas id="debug-canvas" width="512" height="512" style="border: 1px solid"></canvas>
 </body>
 </html>
