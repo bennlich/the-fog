@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "dependencies": {
     "firebase": "1.0.x",
-    "binaryjs": "0.2.x"
+    "binaryjs": "0.2.x",
+    "base64-stream": "0.1.x"
   }
 }
