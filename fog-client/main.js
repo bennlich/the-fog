@@ -41,40 +41,45 @@ function init() {
 	console.log('listening to ' + httpRef.toString());
 
 	// listen for incoming http requests
-	httpRef.endAt().limit(1).on('child_added', function(childSnapshot) {
-		var req = childSnapshot.child('request').val(),
-			resRef = childSnapshot.ref().child('response');
+	new WorkQueue(httpRef, handleRequest);
+	// httpRef.endAt().limit(1).on('child_added', );
+}
 
-		console.log('received request:', req);
+function handleRequest(job, snapshot, whenFinished) {
+	var req = job.request,
+		resRef = snapshot.ref().child('response');
 
-		if (!req.pathname) {
-			console.warn("request was missing a pathname argument; sent no reply");
-			return;
-		}
+	console.log('received request:', req);
 
-		req.pathname = decodeURI(req.pathname);
+	if (!req.pathname) {
+		console.warn("request was missing a pathname argument; sent no reply");
+		return;
+	}
 
-		if (req.pathname.lastIndexOf('/') == (req.pathname.length - 1)) {
-			handleDirectoryRequest(req, resRef);
+	req.pathname = decodeURI(req.pathname);
+
+	if (req.pathname.lastIndexOf('/') == (req.pathname.length - 1)) {
+		handleDirectoryRequest(req, resRef);
+	}
+	else {
+		var splitPathname = req.pathname.split("/");
+		if (splitPathname.length == 5 && splitPathname[4].slice(-4) == '.png') {
+			// /filename/z/x/y.png
+			handleTileRequest(req, resRef);
 		}
 		else {
-			var splitPathname = req.pathname.split("/");
-			if (splitPathname.length == 5 && splitPathname[4].slice(-4) == '.png') {
-				// /filename/z/x/y.png
-				handleTileRequest(req, resRef);
-			}
-			else {
-				handleFileRequest(req, resRef);
-			}
+			handleFileRequest(req, resRef);
 		}
+	}
 
-		// Stephen's code for running code in a client
-		// if (req.query && req.query.hasOwnProperty('command')) {
-		// 	console.log('> ' + req.query.command);
-		// 	res = eval(req.query.command);
-		// 	resRef.set(res);
-		// }
-	});
+	whenFinished();
+
+	// Stephen's code for running code in a client
+	// if (req.query && req.query.hasOwnProperty('command')) {
+	// 	console.log('> ' + req.query.command);
+	// 	res = eval(req.query.command);
+	// 	resRef.set(res);
+	// }
 }
 
 function handleTileRequest(req, resRef) {
