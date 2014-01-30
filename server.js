@@ -71,9 +71,9 @@ function handleRequest(httpReq, httpRes) {
 		splitPath = urlParts.pathname.split("/");
 
 	if (splitPath.length < 3) {
-		console.log('bad request');
-		httpRes.writeHead(404);
-		httpRes.end();
+		var msg = 'Bad request. ' +
+			'Request format: /<storage-name>/path/to/file';
+		respondWithError(httpRes, msg);
 		return;
 	}
 
@@ -89,6 +89,14 @@ function handleRequest(httpReq, httpRes) {
 			'method': httpReq.method,
 			'timestamp': new Date()
 		};
+
+	var illegalChars = /[\[\]\.\/\$\#]/;
+	if (illegalChars.test(storageName)) {
+		var msg = 'One or more illegal characters in storage name ( . # / [ ] $ ). ' +
+			'Request format: /<storage-name>/path/to/file';
+		respondWithError(httpRes, msg);
+		return;
+	}
 
 	console.log(new Date() + ': ----------------------------------------');
 	console.log(urlParts, storageName, pathname);
@@ -147,4 +155,11 @@ function handleRequest(httpReq, httpRes) {
 		}
 	});
 
+}
+
+function respondWithError(httpRes, msg) {
+	console.log(msg);
+	httpRes.writeHead(404);
+	httpRes.write(msg);
+	httpRes.end();
 }
