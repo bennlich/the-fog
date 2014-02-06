@@ -6,7 +6,7 @@
 var httpRef = new Firebase('https://acequia.firebaseio.com/fog/tile'),
 	filer = new Filer(),
 	binaryClient = new BinaryClient('ws://localhost:8080'),
-	tiler = new Tiler(512);
+	tiler = new Tiler(256);
 
 function reset() {
 	filer.ls('/', function(entries) {
@@ -96,6 +96,12 @@ function handleTileRequest(req, resRef) {
 		else if (err.code == FileError.NOT_FOUND_ERR) {
 			console.log('creating new tile');
 			tiler.createTile(req.pathname, function(err, dataUrl) {
+
+				if (err) {
+					console.log("ERR:", err);
+					return;
+				}
+
 				var blob = dataURLtoBlob(dataUrl);
 
 				console.log('saving new tile:', blob);
