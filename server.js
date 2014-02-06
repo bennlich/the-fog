@@ -15,7 +15,7 @@ var baseURL = 'https://acequia.firebaseio.com/fog/',
 	pendingRequests = [];
 
 binaryServer = BinaryServer({ server: app });
-app.listen(8080);
+app.listen(8962);
 
 binaryServer.on('connection', function(client) {
 	client.on('stream', function(stream, meta) {
