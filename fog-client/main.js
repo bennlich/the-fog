@@ -5,7 +5,7 @@
 
 var httpRef = new Firebase('https://acequia.firebaseio.com/fog/tile'),
 	filer = new Filer(),
-	binaryClient = new BinaryClient('ws://localhost:8080'),
+	binaryClient = new BinaryClient('ws://fog.redfish.com'),
 	tiler = new Tiler(256);
 
 function reset() {
