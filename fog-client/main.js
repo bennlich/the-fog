@@ -6,7 +6,7 @@
 var httpRef = new Firebase('https://acequia.firebaseio.com/fog/tile'),
 	filer = new Filer(),
 	binaryClient = new BinaryClient('ws://fog.redfish.com'),
-	tiler = new Tiler(256);
+	tiler = new Tiler(512);
 
 function reset() {
 	filer.ls('/', function(entries) {
@@ -116,6 +116,7 @@ function handleTileRequest(req, resRef) {
 				var headers = {
 					'Content-Type': 'image/png',
 					'Content-Length': blob.size,
+					'Access-Control-Allow-Origin': '*',
 					'ETag': new Date()
 				};
 				binaryClient.send(blob, { headers: headers, id: req.id });
@@ -128,6 +129,7 @@ function respondWithFile(req, file) {
 	var headers = {
 		'Content-Type': file.type,
 		'Content-Length': file.size,
+		'Access-Control-Allow-Origin': '*',
 		'ETag': file.lastModifiedDate
 	};
 	binaryClient.send(file, { headers: headers, id: req.id });
