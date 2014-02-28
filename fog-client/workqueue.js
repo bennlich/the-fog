@@ -1,5 +1,4 @@
-// Edited to mark a job as 'taken' instead of removing it entirely
-// Also edited to pass the snapshot, in addition to the data, to the processingCallback
+// edited to pass the snapshot, in addition to the data, to the processingCallback
 
 /**
  * This class manages a list of Firebase elements and dispatches items in it to 
@@ -34,9 +33,8 @@ WorkQueue.prototype.tryToProcess = function() {
 		this.currentItem = null;
 		toProcess.transaction(function(theItem) {
 			dataToProcess = theItem;
-			if(theItem && !theItem.taken) {
-				theItem.taken = true;
-				return theItem;
+			if(theItem) {
+				return null;
 			} else {
 				return;
 			}

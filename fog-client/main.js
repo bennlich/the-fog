@@ -6,6 +6,7 @@
 var httpRef = new Firebase('https://acequia.firebaseio.com/fog/tile'),
 	filer = new Filer(),
 	binaryClient = new BinaryClient('ws://fog.redfish.com'),
+	// binaryClient = new BinaryClient('ws://localhost:8962'),
 	tiler = new Tiler(512);
 
 function reset() {
@@ -41,12 +42,12 @@ function init() {
 	console.log('listening to ' + httpRef.toString());
 
 	// listen for incoming http requests
-	new WorkQueue(httpRef, handleRequest);
+	new WorkQueue(httpRef.child('requests'), handleRequest);
 }
 
 function handleRequest(job, snapshot, whenFinished) {
 	var req = job.request,
-		resRef = snapshot.ref().child('response');
+		resRef = httpRef.child('responses/'+snapshot.name());
 
 	console.log('received request:', req);
 
