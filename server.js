@@ -53,8 +53,12 @@ binaryServer.on('connection', function(client) {
 
 function destroyPendingRequest(id) {
 	var pendingRequest = pendingRequests[id];
-	pendingRequest.resRef && pendingRequest.resRef.off();
-	pendingRequest.reqRef && pendingRequest.reqRef.remove();
+	if (pendingRequest.resRef) {
+		pendingRequest.resRef.off();
+		pendingRequest.resRef.remove();
+	}
+
+	// pendingRequest.reqRef && pendingRequest.reqRef.remove();
 	delete pendingRequests[id];
 }
 
@@ -102,7 +106,7 @@ function handleRequest(httpReq, httpRes) {
 	console.log(urlParts, storageName, pathname);
 	console.log(requestFields.headers);
 
-	var reqRef = rootRef.child(storageName).push({
+	var reqRef = rootRef.child(storageName).child('requests').push({
 		'request': requestFields
 	}, function(error) {
 		if (error) {
@@ -111,7 +115,7 @@ function handleRequest(httpReq, httpRes) {
 		}
 	});
 
-	resRef = rootRef.child(storageName).child(reqRef.name() + '/response');
+	resRef = rootRef.child(storageName).child('responses/'+reqRef.name());
 
 	pendingRequests[reqId] = {
 		httpRes: httpRes,
