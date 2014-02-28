@@ -42,7 +42,6 @@ function init() {
 
 	// listen for incoming http requests
 	new WorkQueue(httpRef, handleRequest);
-	// httpRef.endAt().limit(1).on('child_added', );
 }
 
 function handleRequest(job, snapshot, whenFinished) {
