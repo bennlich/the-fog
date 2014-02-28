@@ -3,11 +3,13 @@
 // 	console.log(cookies);
 // })()
 
-var httpRef = new Firebase('https://acequia.firebaseio.com/fog/tile'),
+var fogRef = new Firebase('https://acequia.firebaseio.com/fog'),
+	httpRef = fogRef.child('tile'),
 	filer = new Filer(),
-	binaryClient = new BinaryClient('ws://fog.redfish.com'),
-	// binaryClient = new BinaryClient('ws://localhost:8962'),
-	tiler = new Tiler(512);
+	tiler = new Tiler(512),
+	serverUrl = 'ws://fog.redfish.com',
+	// serverUrl = 'ws://localhost:8962',
+	binaryClient;
 
 function reset() {
 	filer.ls('/', function(entries) {
@@ -27,9 +29,27 @@ function init() {
 	filer.init({persistent: false, size: 1024 * 1024}, function(fs) {
 		console.log('initialized filesystem');
 		filer.mkdir('/images/', false, function(dirEntry) {
-			console.log('created images directory');
+			console.log('images directory ready');
 		}, onError);
 	}, onError);
+
+	var firstTime = true;
+	fogRef.child('online').on('value', function(connectedSnap) {
+		if (connectedSnap.val()) {
+			restartBinaryClient();
+			if (firstTime) {
+				firstTime = false;
+				startWorkQueue();
+			}
+		}
+		else {
+			console.log('binary server is offline');
+		}
+	});
+}
+
+function restartBinaryClient() {
+	binaryClient = new BinaryClient(serverUrl);
 
 	binaryClient.on('open', function() {
 		console.log('opened connection to binary server');
@@ -38,7 +58,9 @@ function init() {
 	binaryClient.on('close', function() {
 		console.log('lost connection to binary server');
 	});
+}
 
+function startWorkQueue() {
 	console.log('listening to ' + httpRef.toString());
 
 	// listen for incoming http requests
