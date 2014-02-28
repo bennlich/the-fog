@@ -51,6 +51,9 @@ binaryServer.on('connection', function(client) {
 	});
 });
 
+rootRef.child('online').set(true);
+rootRef.child('online').onDisconnect().set(false);
+
 function destroyPendingRequest(id) {
 	var pendingRequest = pendingRequests[id];
 	if (pendingRequest.resRef) {
