@@ -51,7 +51,9 @@ binaryServer.on('connection', function(client) {
 	});
 });
 
-rootRef.child('online').set(true);
+rootRef.child('.info/connected').on('value', function(snap) {
+	snap.val() && rootRef.child('online').set(true);
+});
 rootRef.child('online').onDisconnect().set(false);
 
 function destroyPendingRequest(id) {
