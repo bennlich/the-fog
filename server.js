@@ -7,11 +7,12 @@
 var app = require('http').createServer(handleRequest),
 	BinaryServer = require('binaryjs').BinaryServer,
 	base64 = require('base64-stream'),
-	firebase = require('firebase'),
+	Firebase = require('firebase'),
 	url = require('url');
 
 var baseURL = 'https://acequia.firebaseio.com/fog/',
-	rootRef = new firebase(baseURL),
+	connectedRef = new Firebase(baseURL+'.info/connected'),
+	rootRef = new Firebase(baseURL),
 	pendingRequests = [];
 
 binaryServer = BinaryServer({ server: app });
@@ -51,7 +52,7 @@ binaryServer.on('connection', function(client) {
 	});
 });
 
-rootRef.child('.info/connected').on('value', function(snap) {
+connectedRef.on('value', function(snap) {
 	snap.val() && rootRef.child('online').set(true);
 });
 rootRef.child('online').onDisconnect().set(false);
