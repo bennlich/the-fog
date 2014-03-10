@@ -11,7 +11,7 @@ var app = require('http').createServer(handleRequest),
 	url = require('url');
 
 var baseURL = 'https://acequia.firebaseio.com/fog/',
-	connectedRef = new Firebase(baseURL+'.info/connected'),
+	connectedRef = new Firebase('https://acequia.firebaseio.com/.info/connected'),
 	rootRef = new Firebase(baseURL),
 	pendingRequests = [];
 
