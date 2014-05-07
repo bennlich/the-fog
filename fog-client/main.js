@@ -4,25 +4,53 @@
 // })()
 
 var fogRef = new Firebase('https://acequia.firebaseio.com/fog'),
-	httpRef = fogRef.child('tile'),
+	httpRef,
 	filer = new Filer(),
 	tiler = new Tiler(512),
 	serverUrl = 'ws://fog.redfish.com',
 	// serverUrl = 'ws://localhost:8962',
+	workQueue,
 	binaryClient;
 
-function reset() {
+function clearFilesystem() {
 	filer.ls('/', function(entries) {
+		var q = queue();
 		entries.forEach(function(entry) {
-			filer.rm(entry, function() {}, onError);
+			q.defer(rm, entry);
+			// filer.rm(entry, function() {}, onError);
+		});
+
+		q.awaitAll(function(err, results) {
+			if (err) onError(err);
+			
+			filer.mkdir('/images/', false, function(dirEntry) {
+				console.log('images directory ready');
+				showFiles();
+			}, onError);
 		});
 	});
 }
 
-function listRoot() {
-	filer.ls('/', function(entries) {
-		console.log(entries);
+function showFiles() {
+	var filesDiv = $('#filenames');
+	filesDiv.empty();
+
+	filer.ls('/images/', function(entries) {
+		for (var i = 0; i < entries.length; i++) {
+			filesDiv.append($('<div>'+entries[i].name+'</div>'));
+		}
 	});
+}
+
+function setDomain() {
+	var domain = $('#domainInput').val();
+	localStorage.setItem("fog-domain", domain);
+	startWorkQueue(domain);
+}
+
+function testDomain() {
+	var domain = $('#domainInput').val();
+	window.open('http://fog.redfish.com/'+domain+'/images/');
 }
 
 function init() {
@@ -30,17 +58,15 @@ function init() {
 		console.log('initialized filesystem');
 		filer.mkdir('/images/', false, function(dirEntry) {
 			console.log('images directory ready');
+			showFiles();
 		}, onError);
 	}, onError);
 
 	var firstTime = true;
 	fogRef.child('online').on('value', function(connectedSnap) {
 		if (connectedSnap.val()) {
-			restartBinaryClient();
-			if (firstTime) {
-				firstTime = false;
-				startWorkQueue();
-			}
+			restartBinaryClient(firstTime);
+			firstTime = false;
 		}
 		else {
 			console.log('binary server is offline');
@@ -48,11 +74,16 @@ function init() {
 	});
 }
 
-function restartBinaryClient() {
+function restartBinaryClient(firstTime) {
 	binaryClient = new BinaryClient(serverUrl);
 
 	binaryClient.on('open', function() {
 		console.log('opened connection to binary server');
+		if (firstTime) {
+			var domain = localStorage.getItem("fog-domain");
+			$('#domainInput').val(domain);
+			startWorkQueue(domain);
+		}
 	});
 
 	binaryClient.on('close', function() {
@@ -60,11 +91,16 @@ function restartBinaryClient() {
 	});
 }
 
-function startWorkQueue() {
-	console.log('listening to ' + httpRef.toString());
+function startWorkQueue(domain) {	
+	// cancel old work queue
+	workQueue && workQueue.off();
 
 	// listen for incoming http requests
-	new WorkQueue(httpRef.child('requests'), handleRequest);
+	if (domain) {
+		httpRef = fogRef.child(domain);
+		console.log('listening to ' + httpRef.toString());
+		workQueue = new WorkQueue(httpRef.child('requests'), handleRequest);
+	}
 }
 
 function handleRequest(job, snapshot, whenFinished) {
@@ -245,6 +281,24 @@ function handleError(err, resRef) {
 }
 
 // wrappers for filer functions that convert f(result), f(err) -> f(err, result)
+function rm(entry, callback) {
+	filer.rm(entry, function(result) {
+		callback && callback(null, result);
+	}, function(err) {
+		callback && callback(err);
+	});
+}
+
+function write(path, data, callback) {
+	filer.write(path, data, function(result) {
+		callback && callback(null, result);
+		console.log('write success: ', path);
+	}, function(err) {
+		console.log('write err: ', path);
+		callback && callback(err);
+	});
+}
+
 function openFile(path, callback) {
 	filer.open(path, function(result) {
 		callback && callback(null, result);

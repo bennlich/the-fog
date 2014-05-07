@@ -50,9 +50,9 @@ Tiler.prototype.createTile = function(path, callback) {
 		ctx.drawImage(img, tileRect[0], tileRect[1], tileRect[2], tileRect[3],
 			0, 0, canvas.width, canvas.height);
 		
-		document.getElementById('debug-canvas').getContext('2d')
-			.drawImage(img, tileRect[0], tileRect[1], tileRect[2], tileRect[3],
-			0, 0, canvas.width, canvas.height);
+		// document.getElementById('debug-canvas').getContext('2d')
+		// 	.drawImage(img, tileRect[0], tileRect[1], tileRect[2], tileRect[3],
+		// 	0, 0, canvas.width, canvas.height);
 
 		return canvas;
 	}

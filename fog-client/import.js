@@ -33,13 +33,34 @@ function onImportDirectory(e) {
 }
 
 function onImportFile(e) {
-	var files = e.target.files;
+	var files = e.target.files,
+		q = queue();
+
 	if (files.length) {
 		Util.toArray(files).forEach(function(file, i) {
-			filer.write('/images/'+file.name, { data: file }, function(fileEntry, fileWriter) {
-				console.log("Saved /images/"+file.name+".");
-			}, onError);
+			if (file.name !== '.DS_Store' && file.name !== '.') {
+				q.defer(write, '/images/'+file.name, { data: file });
+			}			
 		});
+
+		q.awaitAll(function(err, results) {
+			console.log('done with all writes');
+			if (err) {
+				console.log(err);
+			}
+			if (results) {
+				results.forEach(function(fileEntry, fileWriter) {
+					console.log("Saved /images/"+fileEntry.name+".");
+				});	
+			}
+			resetFormElement($(e.target));
+			showFiles();
+		});
+	}
+
+	function resetFormElement(el) {
+		el.wrap('<form>').closest('form').get(0).reset();
+		el.unwrap();
 	}
 }
 
