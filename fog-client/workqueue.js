@@ -1,4 +1,5 @@
 // edited to pass the snapshot, in addition to the data, to the processingCallback
+// edited to have an off() function
 
 /**
  * This class manages a list of Firebase elements and dispatches items in it to 
@@ -13,6 +14,7 @@
 function WorkQueue(queueRef, processingCallback) {
 	this.processingCallback = processingCallback;
 	this.busy = false;
+	this.queueRef = queueRef;
 	queueRef.startAt().limit(1).on("child_added", function(snap) {
 		this.currentItem = snap.ref();
 		this.tryToProcess();
@@ -51,6 +53,10 @@ WorkQueue.prototype.tryToProcess = function() {
 			 }
 		});
 	}
+}
+
+WorkQueue.prototype.off = function() {
+	this.queueRef.off();
 }
 
 if (typeof(module) !== 'undefined') module.exports = WorkQueue;
